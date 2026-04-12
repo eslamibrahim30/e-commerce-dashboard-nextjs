@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-// import { connectDB } from "@/lib/db";
+import  connectDB  from "@/lib/db";
 import User from "@/models/users";
 import bcrypt from "bcryptjs";
 import { signToken } from "@/lib/jwt";
 
 export async function POST(req: Request) {
 
-//   await connectDB();
+  await connectDB();
 
     const { email, password } = await req.json();
 
