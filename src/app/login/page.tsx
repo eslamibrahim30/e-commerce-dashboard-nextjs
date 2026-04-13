@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-
-import { loginSchema } from "@/lib/validation"
+import { toast } from 'sonner';
+import  {loginSchema}  from "@/lib/validation"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,8 +15,8 @@ import { Label } from "@/components/ui/label"
 type LoginForm = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
-
-  const router = useRouter()
+    
+  const router = useRouter()    
 
   const {
     register,
@@ -37,10 +37,19 @@ export default function LoginPage() {
     })
 
     if (!res.ok) {
-      alert("Invalid credentials")
+      toast.error("Invalid credentials", {
+                    style: {
+                        background: '#dc2626',
+                        color: '#fff',
+                    },
+                });
       return
     }
-    
+    toast.success('Login successful!',{style: {
+    background: "#16a34a",
+    color: "white",
+    },});
+    console.log("islam")
     router.push("/dashboard")
   }
 
@@ -48,7 +57,7 @@ export default function LoginPage() {
 
     <div className="flex items-center justify-center min-h-screen bg-muted">
 
-      <Card className="w-[380px]">
+      <Card className="w-95">
 
         <CardHeader>
           <CardTitle className="text-center text-2xl">

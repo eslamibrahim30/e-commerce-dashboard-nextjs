@@ -1,15 +1,37 @@
 import { NextResponse } from "next/server";
-import  connectDB  from "@/lib/db";
+import connectDB from "@/lib/db";
 import User from "@/models/users";
 import bcrypt from "bcryptjs";
+
+type RegisterBody = {
+  name: string;
+  email: string;
+  password: string;
+};
 
 export async function POST(req: Request) {
 
   await connectDB();
 
-  const { email, password } = await req.json();
+  const body: RegisterBody = await req.json();
 
-  const existingUser = await User.findOne({ email });
+  const { name, email, password } = body;
+
+  if (!name || !email || !password) {
+    return NextResponse.json(
+      {
+        success: false,
+        data:null,
+        message: "Missing fields" 
+
+      },
+      { status: 400 }
+    );
+  }
+
+  const existingUser = await User.findOne({
+    email: email.toLowerCase()
+  });
 
   if (existingUser) {
     return NextResponse.json(
@@ -21,16 +43,18 @@ export async function POST(req: Request) {
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const user = await User.create({
-    email,
-    password: hashedPassword
+    name,
+    email: email.toLowerCase(),
+    password: hashedPassword,
+    role: "admin"
   });
 
   return NextResponse.json({
     success: true,
     data: {
-    email: email,
-    role: role
+      email: user.email,
+      role: user.role
     },
-    "message": "Login successful"
+    message: "User registered successfully"
   });
 }
