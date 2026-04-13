@@ -6,38 +6,21 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
   const { pathname } = request.nextUrl;
 
-  const protectedRoutes = ["/dashboard", "/admin"];
   const authRoutes = ["/login", "/register"];
 
-  const isProtected = protectedRoutes.some(route =>
-    pathname.startsWith(route)
-  );
+  const isAuthPage = authRoutes.includes(pathname);
+  const isDashboard = pathname === "/" || pathname.startsWith("/admin");
 
-  const isAuthPage = authRoutes.some(route =>
-    pathname.startsWith(route)
-  );
+  const decoded = token ? verifyToken(token) : null;
 
-  if (isAuthPage && token) {
-
-    const decoded = verifyToken(token);
-
-    if (decoded) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
+  // لو المستخدم مسجل دخول ويحاول فتح login او register
+  if (isAuthPage && decoded) {
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
-
-  if (isProtected) {
-
-    if (!token) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
-
-    const decoded = verifyToken(token);
-
-    if (!decoded) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
+  // لو يحاول دخول dashboard بدون تسجيل
+  if (isDashboard && !decoded) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.next();
@@ -45,7 +28,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/dashboard/:path*",
+    "/",
     "/admin/:path*",
     "/login",
     "/register"

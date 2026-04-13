@@ -49,8 +49,8 @@ export default function LoginPage() {
     background: "#16a34a",
     color: "white",
     },});
-    console.log("islam")
-    router.push("/dashboard")
+    
+    router.push("/")
   }
 
   return (
