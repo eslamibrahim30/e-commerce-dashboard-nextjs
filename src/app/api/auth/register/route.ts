@@ -3,11 +3,7 @@ import connectDB from "@/lib/db";
 import User from "@/models/users";
 import bcrypt from "bcryptjs";
 
-type RegisterBody = {
-  name: string;
-  email: string;
-  password: string;
-};
+import {RegisterBody} from '@/interfaces/users'
 
 export async function POST(req: Request) {
 
