@@ -13,3 +13,13 @@ export const products: Product[] = [
   { id: '3', name: 'iPhone 15 Pro', category: 'Electronics', price: 1099, stock: 0, status: 'Out of Stock' },
   { id: '4', name: 'Leather Wallet', category: 'Accessories', price: 45, stock: 25, status: 'In Stock' },
 ];
+
+export const salesData = [
+  { name: 'Mon', sales: 1200 },
+  { name: 'Tue', sales: 2100 },
+  { name: 'Wed', sales: 800 },
+  { name: 'Thu', sales: 1600 },
+  { name: 'Fri', sales: 2900 },
+  { name: 'Sat', sales: 3100 },
+  { name: 'Sun', sales: 1500 },
+];
