@@ -1,7 +1,17 @@
+"use client"
 import Link from "next/link";
 import Image from "next/image";
 import { LayoutDashboard, ShoppingBag, FolderTree, LogOut, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+
+interface ILogOut{
+    success:boolean;
+    data:null;
+    message:string
+
+}
 
 const menuItems = [
     { label: "Dashboard", icon: LayoutDashboard, href: "/" },
@@ -10,6 +20,30 @@ const menuItems = [
 ];
 
 export default function Sidebar() {
+    const router = useRouter();
+    const handleLogout = async () => {
+  const response = await fetch("/api/auth/logout", {
+    method: "POST",
+  });
+
+    const data:ILogOut = await response.json();
+
+    if (response.ok) {
+        toast.success(data.message,{style: {
+    background: "#16a34a",
+    color: "white",
+    },});
+    } else {
+        toast.error(data.message || "Logout failed", {
+                    style: {
+                        background: '#dc2626',
+                        color: '#fff',
+                    },
+                });
+    }
+    router.push("/login");
+    };
+
     return (
         <aside className="w-64 bg-card h-screen flex flex-col fixed left-0 top-0 border-r transition-colors duration-300 z-50">
 
@@ -46,6 +80,7 @@ export default function Sidebar() {
             <div className="p-4 border-t space-y-1 mt-auto">
                 
                 <Button
+                    onClick={handleLogout}
                     variant="ghost"
                     // تأثير الخروج باللون الأحمر الـ Destructive
                     className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors rounded-lg"
