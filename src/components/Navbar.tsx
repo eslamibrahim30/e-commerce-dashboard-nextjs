@@ -1,7 +1,10 @@
 import { User, Bell, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-export default function Navbar() {
+import {IUser} from "@/interfaces/users"
+interface INavbarProp{
+  user:IUser
+}
+export default function Navbar({user}:INavbarProp) {
   return (
     <header className="h-16 border-b bg-background/80 backdrop-blur-md sticky top-0 z-40 px-8 flex items-center justify-between transition-all duration-300">
       
@@ -29,7 +32,7 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex flex-col items-start leading-tight text-left">
-            <span className="text-xs font-bold text-foreground">Merna Elnshar</span>
+            <span className="text-xs font-bold text-foreground">  {user?.name || "User"}</span>
             <span className="text-[10px] text-muted-foreground">Administrator</span>
           </div>
 
