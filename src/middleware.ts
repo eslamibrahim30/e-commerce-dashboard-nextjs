@@ -9,7 +9,7 @@ export function middleware(request: NextRequest) {
   const authRoutes = ["/login", "/register"];
 
   const isAuthPage = authRoutes.includes(pathname);
-  const isDashboard = pathname === "/" || pathname.startsWith("/admin");
+  const isDashboard = pathname === "/" || pathname.startsWith("/admin") || pathname.startsWith("/products");
 
   const decoded = token ? verifyToken(token) : null;
 
@@ -30,6 +30,7 @@ export const config = {
   matcher: [
     "/",
     "/admin/:path*",
+    "/products/:path*",
     "/login",
     "/register"
   ]
