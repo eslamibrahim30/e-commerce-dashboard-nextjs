@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import Product from "@/models/Product";
-import Category from "@/models/Category";
+import {Category} from "@/models/Category";
 import mongoose from "mongoose";
 
 export async function GET() {

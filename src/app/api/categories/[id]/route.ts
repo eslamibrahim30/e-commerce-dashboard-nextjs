@@ -1,151 +1,51 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/db";
-import Category from "@/models/Category";
-import Product from "@/models/Product";
+import { Category, Product } from "@/models/Category"; // Added curly braces for named imports
 import mongoose from "mongoose";
 
-type Context = { params: Promise<{ id: string }> };
+type Context = { params: Promise<{ id: string }> }; // params is a Promise in Next.js 15
 
 export async function PUT(request: NextRequest, context: Context) {
   try {
     await connectDB();
-
-    const { id } = await context.params;
+    const { id } = await context.params; // Await the params
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json(
-        {
-          success: false,
-          data: null,
-          message: "Category not found",
-        },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, message: "Invalid ID" }, { status: 400 });
     }
 
     const body = await request.json();
     const { name, description } = body;
 
-    // Build update object with only provided fields
-    const updateData: Record<string, unknown> = {};
-    if (name !== undefined) updateData.name = name;
-    if (description !== undefined) updateData.description = description;
-
-    // Check for duplicate name if name is being updated
-    if (name) {
-      const existing = await Category.findOne({
-        name,
-        _id: { $ne: id },
-      });
-      if (existing) {
-        return NextResponse.json(
-          {
-            success: false,
-            data: null,
-            message: "A category with this name already exists",
-          },
-          { status: 400 }
-        );
-      }
-    }
-
-    const category = await Category.findByIdAndUpdate(id, updateData, {
-      new: true,
-      runValidators: true,
-    });
-
-    if (!category) {
-      return NextResponse.json(
-        {
-          success: false,
-          data: null,
-          message: "Category not found",
-        },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(
-      {
-        success: true,
-        data: category,
-        message: "Category updated successfully",
-      },
-      { status: 200 }
+    const updated = await Category.findByIdAndUpdate(
+      id,
+      { name, description },
+      { new: true }
     );
-  } catch (error) {
-    console.error("Error updating category:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        data: null,
-        message: "Failed to update category",
-      },
-      { status: 500 }
-    );
+
+    return NextResponse.json({ success: true, data: updated });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
 
 export async function DELETE(_request: NextRequest, context: Context) {
   try {
     await connectDB();
+    const { id } = await context.params; // Await the params
 
-    const { id } = await context.params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json(
-        {
-          success: false,
-          data: null,
-          message: "Category not found",
-        },
-        { status: 404 }
-      );
-    }
-
-    // Check if any products reference this category
+    // Requirement: Block delete if products exist
     const productCount = await Product.countDocuments({ category: id });
     if (productCount > 0) {
       return NextResponse.json(
-        {
-          success: false,
-          data: null,
-          message: "Cannot delete category with existing products",
-        },
+        { success: false, message: "Cannot delete: this category has products assigned" }, 
         { status: 400 }
       );
     }
 
-    const category = await Category.findByIdAndDelete(id);
-
-    if (!category) {
-      return NextResponse.json(
-        {
-          success: false,
-          data: null,
-          message: "Category not found",
-        },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(
-      {
-        success: true,
-        data: null,
-        message: "Category deleted successfully",
-      },
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error("Error deleting category:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        data: null,
-        message: "Failed to delete category",
-      },
-      { status: 500 }
-    );
+    await Category.findByIdAndDelete(id);
+    return NextResponse.json({ success: true, message: "Category deleted" });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });
   }
 }

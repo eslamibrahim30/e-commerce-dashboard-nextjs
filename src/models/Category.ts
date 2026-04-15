@@ -1,31 +1,20 @@
-import mongoose, { Schema, Document, Model } from "mongoose";
+import mongoose, { Schema, model, models } from "mongoose";
 
-export interface ICategory extends Document {
-  name: string;
-  description?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+// Category Schema
+const CategorySchema = new Schema({
+  name: { type: String, required: true, unique: true },
+  description: { type: String },
+}, { timestamps: true });
 
-const CategorySchema = new Schema<ICategory>(
-  {
-    name: {
-      type: String,
-      required: [true, "Category name is required"],
-      unique: true,
-      trim: true,
-    },
-    description: {
-      type: String,
-      trim: true,
-    },
-  },
-  {
-    timestamps: true,
-  }
-);
+// Product Schema
+const ProductSchema = new Schema({
+  name: { type: String, required: true },
+  category: { type: Schema.Types.ObjectId, ref: "Category", required: true },
+  price: { type: Number, required: true },
+  stock: { type: Number, required: true },
+  description: { type: String },
+});
 
-const Category: Model<ICategory> =
-  mongoose.models.Category || mongoose.model<ICategory>("Category", CategorySchema);
-
-export default Category;
+// FIX: Use named exports instead of two defaults
+export const Category = models.Category || model("Category", CategorySchema);
+export const Product = models.Product || model("Product", ProductSchema);
