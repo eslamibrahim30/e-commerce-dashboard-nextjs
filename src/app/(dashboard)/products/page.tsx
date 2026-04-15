@@ -1,15 +1,19 @@
 "use client";
 
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableHead,
-  TableRow,
-  TableCell,
-} from "@/components/ui/table";
+import ReusableTable from "@/components/shared/ReusableTable";
+import { Button } from "@/components/ui/button";
+import { Edit, Trash2, Plus, Package } from "lucide-react";
 
-const placeholderProducts = [
+interface Product {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  discount: number;
+  stock: number;
+}
+
+const placeholderProducts: Product[] = [
   {
     id: "1",
     name: "Wireless Headphones",
@@ -29,36 +33,78 @@ const placeholderProducts = [
 ];
 
 export default function ProductsPage() {
+ 
+  const columns = [
+    { 
+      header: "Product", 
+      accessor: "name",
+      render: (item: Product) => (
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center text-primary">
+            <Package size={16} />
+          </div>
+          <span className="font-medium text-foreground">{item.name}</span>
+        </div>
+      )
+    },
+    { header: "Category", accessor: "category" },
+    { 
+      header: "Price", 
+      accessor: "price",
+      render: (item: Product) => <span className="font-semibold">${item.price}</span>
+    },
+    { 
+      header: "Discount", 
+      accessor: "discount",
+      render: (item: Product) => (
+        <span className={item.discount > 0 ? "text-primary font-medium" : "text-muted-foreground"}>
+          {item.discount}%
+        </span>
+      )
+    },
+    { 
+      header: "Stock", 
+      accessor: "stock",
+      render: (item: Product) => (
+        <span className={`px-2 py-0.5 rounded text-xs font-bold ${item.stock < 15 ? "bg-orange-100 text-orange-600" : "bg-primary/10 text-primary"}`}>
+          {item.stock} in stock
+        </span>
+      )
+    },
+  ];
+
+  
+  const actions = (item: Product) => (
+    <div className="flex justify-end gap-1">
+      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors">
+        <Edit size={16} />
+      </Button>
+      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive transition-colors">
+        <Trash2 size={16} />
+      </Button>
+    </div>
+  );
+
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">Products</h1>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Category</TableHead>
-            <TableHead>Price</TableHead>
-            <TableHead>Discount</TableHead>
-            <TableHead>Stock</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {placeholderProducts.map((product) => (
-            <TableRow key={product.id}>
-              <TableCell>{product.name}</TableCell>
-              <TableCell>{product.category}</TableCell>
-              <TableCell>${product.price}</TableCell>
-              <TableCell>{product.discount}%</TableCell>
-              <TableCell>{product.stock}</TableCell>
-              <TableCell className="flex gap-2">
-                <button className="text-blue-500">Edit</button>
-                <button className="text-red-500">Delete</button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+    <div className="flex flex-col gap-6 p-2">
+      
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Products</h1>
+          <p className="text-sm text-muted-foreground">Overview of your store inventory.</p>
+        </div>
+        <Button className="gap-2 shadow-lg shadow-primary/20">
+          <Plus size={18} />
+          Add Product
+        </Button>
+      </div>
+
+      
+      <ReusableTable<Product> 
+        columns={columns} 
+        data={placeholderProducts} 
+        actions={actions} 
+      />
     </div>
   );
 }
