@@ -1,23 +1,23 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
 
 import { registerSchema } from "@/lib/validation";
-import { z } from "zod";
-
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import FormInput from "@/components/shared/FormInput";
+import ReusableButton from "@/components/shared/ReusableButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
 
 type RegisterForm = z.infer<typeof registerSchema>;
 type RegisterResponse = {
   message: string;
   success?: boolean;
 };
+
 export default function RegisterPage() {
   const router = useRouter();
 
@@ -32,83 +32,99 @@ export default function RegisterPage() {
   async function onSubmit(data: RegisterForm) {
     const res = await fetch("/api/auth/register", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
 
-    const result:RegisterResponse = await res.json();
+    const result: RegisterResponse = await res.json();
 
     if (!res.ok) {
       toast.error(result.message, {
-                          style: {
-                              background: '#dc2626',
-                              color: '#fff',
-                          },
-                      });
+        style: { background: '#dc2626', color: '#fff' },
+      });
       return;
     }
+
     toast.success(result.message, {
-                    style: {
-                        background: '#16a34a',
-                        color: '#fff',
-                    },
-                });
+      style: { background: '#16a34a', color: '#fff' },
+    });
     router.push("/login");
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-muted">
-      <Card className="w-100">
-        <CardHeader>
-          <CardTitle className="text-center text-2xl">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-muted/40 p-4">
+      
+      <div className="mb-6 animate-in fade-in slide-in-from-top-4 duration-700">
+        <Image 
+          src="/logo.png" 
+          alt="Nova Logo"
+          width={70} 
+          height={70}
+          className="drop-shadow-xl"
+          priority
+        />
+      </div>
+
+      <Card className="w-full max-w-md border-none shadow-2xl bg-card">
+        <CardHeader className="space-y-1 pt-8 text-center border-b border-border/10 pb-6 mb-4">
+          <CardTitle className="text-3xl font-bold tracking-tight">
             Create Account
           </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Join the forest and start managing your store
+          </p>
         </CardHeader>
 
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <CardContent className="pb-8">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             
-            {/* Name */}
-            <div>
-              <Label>Name</Label>
-              <Input {...register("name")} />
-              {errors.name && (
-                <p className="text-red-500 text-sm">
-                  {errors.name.message}
-                </p>
-              )}
-            </div>
+            <FormInput 
+              label="Full Name" 
+              placeholder="Nova Elnshar"
+              error={errors.name?.message}
+              {...register("name")} 
+            />
 
-            {/* Email */}
-            <div>
-              <Label>Email</Label>
-              <Input type="email" {...register("email")} />
-              {errors.email && (
-                <p className="text-red-500 text-sm">
-                  {errors.email.message}
-                </p>
-              )}
-            </div>
+            <FormInput 
+              label="Email Address" 
+              type="email" 
+              placeholder="nova@example.com"
+              error={errors.email?.message}
+              {...register("email")} 
+            />
 
-            {/* Password */}
-            <div>
-              <Label>Password</Label>
-              <Input type="password" {...register("password")} />
-              {errors.password && (
-                <p className="text-red-500 text-sm">
-                  {errors.password.message}
-                </p>
-              )}
-            </div>
+            <FormInput 
+              label="Password" 
+              type="password" 
+              placeholder="••••••••"
+              error={errors.password?.message}
+              {...register("password")} 
+            />
 
-            <Button className="w-full" type="submit">
-              {isSubmitting ? "Creating..." : "Register"}
-            </Button>
+            <ReusableButton 
+              className="w-full h-12 text-md font-bold mt-2" 
+              type="submit"
+              isLoading={isSubmitting}
+            >
+              Create Account
+            </ReusableButton>
+
+            <div className="text-center mt-4">
+              <button 
+                type="button"
+                onClick={() => router.push("/login")}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                Already have an account? <span className="font-semibold underline">Login</span>
+              </button>
+            </div>
           </form>
         </CardContent>
       </Card>
+
+      <p className="mt-8 text-[10px] text-muted-foreground tracking-[0.2em] uppercase opacity-40">
+        Nova Forest UI System &copy; 2026
+      </p>
     </div>
   );
 }
