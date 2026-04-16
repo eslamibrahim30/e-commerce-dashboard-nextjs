@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import ReusableTable from "@/components/shared/ReusableTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,10 +27,21 @@ interface ProductsResponse {
   message: string;
 }
 
+interface ProductResponse {
+  success: boolean;
+  data: Product;
+  message: string;
+}
+
 interface CategoriesResponse {
   success: boolean;
   data: Category[];
   message: string;
+}
+
+async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(url, options);
+  return res.json();
 }
 
 export default function ProductsPage() {
@@ -40,42 +51,60 @@ export default function ProductsPage() {
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState("");
 
-  const [formData, setFormData] = useState({
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
+
+  const formRef = useRef<HTMLDivElement | null>(null);
+
+  const emptyForm = {
     name: "",
     description: "",
     price: "",
     discount: "",
     stock: "",
     category: "",
-  });
+  };
 
-  // Fetch Data on Mount
+  const [formData, setFormData] = useState(emptyForm);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [prodRes, catRes] = await Promise.all([
-          fetch("/api/products"),
-          fetch("/api/categories"),
+        const [prodData, catData] = await Promise.all([
+          fetchJson<ProductsResponse>("/api/products"),
+          fetchJson<CategoriesResponse>("/api/categories"),
         ]);
-        const prodData = (await prodRes.json()) as ProductsResponse;
-        const catData = (await catRes.json()) as CategoriesResponse;
 
         setProducts(prodData.data || []);
         setCategories(catData.data || []);
       } catch (err) {
-        console.error("Error fetching data:", err);
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
+
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (showForm && formRef.current) {
+      formRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [showForm]);
 
   const handleSubmit = async () => {
     try {
       setError("");
-      const res = await fetch("/api/products", {
-        method: "POST",
+
+      const url = editingProduct
+        ? `/api/products/${editingProduct._id}`
+        : "/api/products";
+
+      const method = editingProduct ? "PUT" : "POST";
+
+      const data = await fetchJson<ProductResponse>(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
@@ -85,17 +114,45 @@ export default function ProductsPage() {
         }),
       });
 
-      const data = await res.json();
       if (!data.success) {
         setError(data.message);
         return;
       }
 
-      setProducts((prev) => [...prev, data.data]);
+      if (editingProduct) {
+        setProducts((prev) =>
+          prev.map((p) => (p._id === editingProduct._id ? data.data : p))
+        );
+      } else {
+        setProducts((prev) => [...prev, data.data]);
+      }
+
       setShowForm(false);
-      setFormData({ name: "", description: "", price: "", discount: "", stock: "", category: "" });
-    } catch (err) {
+      setEditingProduct(null);
+      setFormData(emptyForm);
+    } catch {
       setError("Something went wrong");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deletingProduct) return;
+
+    try {
+      const data = await fetchJson<{ success: boolean }>(
+        `/api/products/${deletingProduct._id}`,
+        { method: "DELETE" }
+      );
+
+      if (!data.success) return;
+
+      setProducts((prev) =>
+        prev.filter((p) => p._id !== deletingProduct._id)
+      );
+
+      setDeletingProduct(null);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -109,27 +166,35 @@ export default function ProductsPage() {
             <Package size={16} />
           </div>
           <div>
-            <p className="font-medium text-foreground">{item.name}</p>
-            <p className="text-xs text-muted-foreground truncate max-w-[150px]">{item.description}</p>
+            <p className="font-medium">{item.name}</p>
+            <p className="text-xs text-muted-foreground truncate max-w-[150px]">
+              {item.description}
+            </p>
           </div>
         </div>
       ),
     },
-    { 
-      header: "Category", 
+    {
+      header: "Category",
       accessor: "category",
-      render: (item: Product) => <span>{item.category?.name || "N/A"}</span>
+      render: (item: Product) => (
+        <span>{item.category?.name || "N/A"}</span>
+      ),
     },
     {
       header: "Price",
       accessor: "price",
-      render: (item: Product) => <span className="font-semibold">${item.price.toFixed(2)}</span>,
+      render: (item: Product) => (
+        <span className="font-semibold">
+          ${item.price.toFixed(2)}
+        </span>
+      ),
     },
     {
       header: "Discount",
       accessor: "discount",
       render: (item: Product) => (
-        <span className={item.discount > 0 ? "text-primary font-medium" : "text-muted-foreground"}>
+        <span className="text-primary font-medium">
           {item.discount}%
         </span>
       ),
@@ -140,21 +205,43 @@ export default function ProductsPage() {
       render: (item: Product) => (
         <span
           className={`px-2 py-0.5 rounded text-xs font-bold ${
-            item.stock < 10 ? "bg-orange-100 text-orange-600" : "bg-primary/10 text-primary"
+            item.stock < 10
+              ? "bg-orange-100 text-orange-600"
+              : "bg-primary/10 text-primary"
           }`}
         >
-          {item.stock === 0 ? "Out of Stock" : `${item.stock} in stock`}
+          {item.stock === 0 ? "Out of Stock" : `${item.stock}`}
         </span>
       ),
     },
   ];
 
   const actions = (item: Product) => (
-    <div className="flex justify-end gap-1">
-      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+    <div className="flex gap-1">
+      <Button
+        onClick={() => {
+          setEditingProduct(item);
+          setFormData({
+            name: item.name,
+            description: item.description,
+            price: String(item.price),
+            discount: String(item.discount),
+            stock: String(item.stock),
+            category: item.category?._id || "",
+          });
+          setShowForm(true);
+        }}
+        variant="ghost"
+        size="icon"
+      >
         <Edit size={16} />
       </Button>
-      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
+
+      <Button
+        onClick={() => setDeletingProduct(item)}
+        variant="ghost"
+        size="icon"
+      >
         <Trash2 size={16} />
       </Button>
     </div>
@@ -163,89 +250,118 @@ export default function ProductsPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-[60vh]">
-        <p className="text-muted-foreground animate-pulse">Loading products...</p>
+        <p className="text-muted-foreground animate-pulse">Loading Products...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4">
+    <div className="p-4 flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Products</h1>
-          <p className="text-sm text-muted-foreground">Manage your store inventory and pricing.</p>
-        </div>
-        <Button onClick={() => setShowForm(!showForm)} className="gap-2 shadow-lg shadow-primary/20">
-          {showForm ? <X size={18} /> : <Plus size={18} />}
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Products</h1>
+        <Button
+          onClick={() => {
+            setEditingProduct(null);
+            setFormData(emptyForm);
+            setShowForm(!showForm);
+          }}
+        >
+          {showForm ? <X size={16} /> : <Plus size={16} />}
           {showForm ? "Cancel" : "Add Product"}
         </Button>
       </div>
 
-      {/* Modern Add Form */}
+      {/* Form */}
       {showForm && (
-        <div className="p-6 bg-card border rounded-xl shadow-sm animate-in fade-in slide-in-from-top-2">
-          <h2 className="text-lg font-semibold mb-4">New Product Details</h2>
-          {error && <p className="text-destructive text-sm mb-4">{error}</p>}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Input 
-                placeholder="Product Name" 
-                value={formData.name} 
-                onChange={(e) => setFormData({...formData, name: e.target.value})} 
+        <div ref={formRef} className="p-4 border rounded-lg bg-white">
+          {error && <p className="text-red-500 mb-3">{error}</p>}
+
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              placeholder="Name"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
             />
-            <Input 
-                type="number" 
-                placeholder="Price" 
-                value={formData.price} 
-                onChange={(e) => setFormData({...formData, price: e.target.value})} 
+            <Input
+              placeholder="Price"
+              type="number"
+              value={formData.price}
+              onChange={(e) =>
+                setFormData({ ...formData, price: e.target.value })
+              }
             />
-             <select
+            <Input
+              placeholder="Discount"
+              type="number"
+              value={formData.discount}
+              onChange={(e) =>
+                setFormData({ ...formData, discount: e.target.value })
+              }
+            />
+            <Input
+              placeholder="Stock"
+              type="number"
+              value={formData.stock}
+              onChange={(e) =>
+                setFormData({ ...formData, stock: e.target.value })
+              }
+            />
+
+            <Input
+              placeholder="Description"
+              className="col-span-2"
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+            />
+
+            <select
+              className="col-span-2 border p-2 rounded"
               value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onChange={(e) =>
+                setFormData({ ...formData, category: e.target.value })
+              }
             >
               <option value="">Select Category</option>
               {categories.map((cat) => (
-                <option key={cat._id} value={cat._id}>{cat.name}</option>
+                <option key={cat._id} value={cat._id}>
+                  {cat.name}
+                </option>
               ))}
             </select>
-            <Input 
-                type="number" 
-                placeholder="Discount %" 
-                value={formData.discount} 
-                onChange={(e) => setFormData({...formData, discount: e.target.value})} 
-            />
-            <Input 
-                type="number" 
-                placeholder="Stock Quantity" 
-                value={formData.stock} 
-                onChange={(e) => setFormData({...formData, stock: e.target.value})} 
-            />
-            <Input 
-                className="md:col-span-3"
-                placeholder="Description" 
-                value={formData.description} 
-                onChange={(e) => setFormData({...formData, description: e.target.value})} 
-            />
           </div>
-          <Button onClick={handleSubmit} className="mt-4 gap-2">
-            <Save size={16} /> Save Product
+
+          <Button onClick={handleSubmit} className="mt-4">
+            <Save size={16} /> Save
           </Button>
         </div>
       )}
 
-      {/* Table Section */}
-      <div className="bg-card rounded-lg border shadow-sm">
-        {products.length === 0 ? (
-          <div className="p-20 text-center text-muted-foreground">No products found.</div>
-        ) : (
-          <ReusableTable<Product> 
-            columns={columns} 
-            data={products} 
-            actions={actions} 
-          />
-        )}
-      </div>
+      {/* Table */}
+      <ReusableTable columns={columns} data={products} actions={actions} />
+
+      {/* Delete Modal */}
+      {deletingProduct && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg">
+            <p className="mb-4">
+              Delete {deletingProduct.name} ?
+            </p>
+            <div className="flex gap-3">
+              <Button onClick={() => setDeletingProduct(null)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleDelete}>
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
