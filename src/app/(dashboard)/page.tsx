@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   AreaChart, 
   Area, 
@@ -11,8 +11,8 @@ import {
   ResponsiveContainer 
 } from 'recharts';
 
-// استيراد البيانات والمكونات المشتركة
-import { products, salesData } from './data';
+// استيراد المكونات المشتركة
+import { salesData } from './data';
 import ReusableButton from "@/components/shared/ReusableButton";
 import ReusableTable from "@/components/shared/ReusableTable";
 import { 
@@ -24,23 +24,32 @@ import {
   LucideIcon 
 } from "lucide-react";
 
-// --- 1. تعريف الـ Interfaces (للقضاء على الـ any) ---
+// --- 1. Interfaces ---
 
 interface StatCardProps {
   title: string;
   value: string | number;
-  trend: string;
-  isPositive: boolean;
+  trend?: string;
+  isPositive?: boolean;
   icon: LucideIcon;
 }
 
-// الـ Product ID هنا string عشان يطابق ملف الـ data.ts بتاعك
 interface Product {
   id: string; 
   name: string;
   category: string;
   price: number;
   status: string;
+}
+
+interface DashboardStats {
+  success: boolean;
+  data: {
+    totalProducts: number;
+    outOfStock: number;
+    totalCategories: number;
+    latestProducts?: Product[];
+  };
 }
 
 // --- 2. المكونات الفرعية ---
@@ -51,11 +60,13 @@ const ModernStatCard = ({ title, value, trend, isPositive, icon: Icon }: StatCar
       <div className="p-3 bg-primary/10 rounded-2xl text-primary group-hover:scale-110 transition-transform">
         <Icon size={20} />
       </div>
-      <span className={`text-[10px] font-black px-2.5 py-1 rounded-full ${
-        isPositive ? 'bg-emerald-500/10 text-emerald-600' : 'bg-destructive/10 text-destructive'
-      }`}>
-        {trend}
-      </span>
+      {trend && (
+        <span className={`text-[10px] font-black px-2.5 py-1 rounded-full ${
+          isPositive ? 'bg-emerald-500/10 text-emerald-600' : 'bg-destructive/10 text-destructive'
+        }`}>
+          {trend}
+        </span>
+      )}
     </div>
     <div>
       <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">{title}</p>
@@ -67,18 +78,43 @@ const ModernStatCard = ({ title, value, trend, isPositive, icon: Icon }: StatCar
 // --- 3. المكون الأساسي للداشبورد ---
 
 export default function LuxuryDashboard() {
-  
-  // تعريف أعمدة الجدول مع تحديد الـ Types بدقة
+  // الحالة الخاصة بالبيانات الحقيقية
+  const [stats, setStats] = useState<any>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  //(Stats API)
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+       
+        const response = await fetch('/api/stats');
+        const result: DashboardStats = await response.json();
+        
+        if (result.success) {
+          setStats(result.data); 
+        
+          if (result.data.latestProducts) {
+            setProducts(result.data.latestProducts);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
   const columns = [
     { 
       header: "Asset Name", 
       accessor: "name" as keyof Product, 
       render: (item: Product) => <span className="font-bold">{item.name}</span> 
     },
-    { 
-      header: "Category", 
-      accessor: "category" as keyof Product 
-    },
+    { header: "Category", accessor: "category" as keyof Product },
     { 
       header: "Price", 
       accessor: "price" as keyof Product, 
@@ -102,6 +138,8 @@ export default function LuxuryDashboard() {
     },
   ];
 
+  if (loading) return <div className="h-screen flex items-center justify-center font-black">SYNCING DATA...</div>;
+
   return (
     <div className="space-y-8 p-2 animate-in fade-in duration-700">
       
@@ -111,41 +149,40 @@ export default function LuxuryDashboard() {
           <div className="flex items-center gap-2">
             <span className="h-1 w-6 bg-primary rounded-full"></span>
             <span className="text-primary font-black text-[10px] uppercase tracking-[0.3em]">
-              Management Suite
+              Real-time Analysis
             </span>
           </div>
           <h1 className="text-4xl font-black tracking-tighter text-foreground">
             Nova <span className="text-primary/80 italic font-light">Analytics</span>
           </h1>
         </div>
-
         <ReusableButton leftIcon={<Download size={16} />} className="shadow-lg shadow-primary/20">
           Generate Report
         </ReusableButton>
       </header>
 
-      {/* Stats Grid */}
+      {/* Stats Grid - الـ 3 كروت المطلوبة في التكليف */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <ModernStatCard 
-          title="Total Assets" 
-          value={products.length} 
-          trend="+14.2%" 
+          title="Total Products" 
+          value={stats?.totalProducts || 0} 
+          trend="+ Live" 
           isPositive={true} 
           icon={Package} 
         />
         <ModernStatCard 
-          title="Net Revenue" 
-          value="$84,200" 
-          trend="+8.1%" 
-          isPositive={true} 
-          icon={DollarSign} 
+          title="Out of Stock" 
+          value={stats?.outOfStock || 0} 
+          trend="Attention" 
+          isPositive={false} 
+          icon={AlertCircle} 
         />
         <ModernStatCard 
-          title="Inventory Risk" 
-          value="Low" 
+          title="Total Categories" 
+          value={stats?.totalCategories || 0} 
           trend="Stable" 
           isPositive={true} 
-          icon={AlertCircle} 
+          icon={TrendingUp} 
         />
       </div>
 
@@ -156,12 +193,8 @@ export default function LuxuryDashboard() {
             <h2 className="text-xl font-black tracking-tight flex items-center gap-2">
               <TrendingUp className="text-primary" size={20} /> Performance Trends
             </h2>
-            <p className="text-muted-foreground text-xs font-medium">Real-time data synchronization active.</p>
+            <p className="text-muted-foreground text-xs font-medium">Data fetched from shared contract API.</p>
           </div>
-          <select className="bg-muted border-none rounded-xl text-[11px] font-bold px-4 py-2.5 outline-none ring-1 ring-border cursor-pointer hover:bg-muted/80 transition-colors">
-            <option>Last 7 Days</option>
-            <option>Last 30 Days</option>
-          </select>
         </div>
         
         <div className="h-[350px] w-full pr-4">
@@ -174,39 +207,14 @@ export default function LuxuryDashboard() {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="0" vertical={false} stroke="hsl(var(--border))" opacity={0.5} />
-              <XAxis 
-                dataKey="name" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{fill: 'hsl(var(--muted-foreground))', fontSize: 12, fontWeight: 600}} 
-                dy={10} 
-              />
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{fill: 'hsl(var(--muted-foreground))', fontSize: 11}} 
-              />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: 'hsl(var(--muted-foreground))', fontSize: 12, fontWeight: 600}} dy={10} />
+              <YAxis axisLine={false} tickLine={false} tick={{fill: 'hsl(var(--muted-foreground))', fontSize: 11}} />
               <Tooltip 
-                formatter={(value: unknown) => {
-                  const val = typeof value === 'number' ? `$${value.toLocaleString()}` : String(value);
-                  return [val, "Revenue"];
-                }}
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--card))', 
-                  borderRadius: '16px', 
-                  border: '1px solid hsl(var(--border))',
-                  boxShadow: '0 10px 30px -10px rgba(0,0,0,0.1)'
-                }}
+                formatter={(value: any) => typeof value === 'number' && value ? [`$${value.toLocaleString()}`, "Revenue"] : ["N/A", "Revenue"]}
+                contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '16px', border: '1px solid hsl(var(--border))' }}
                 itemStyle={{ color: 'hsl(var(--primary))', fontWeight: '900' }}
               />
-              <Area 
-                type="monotone" 
-                dataKey="sales" 
-                stroke="hsl(var(--primary))" 
-                strokeWidth={4} 
-                fillOpacity={1} 
-                fill="url(#novaGradient)" 
-              />
+              <Area type="monotone" dataKey="sales" stroke="hsl(var(--primary))" strokeWidth={4} fillOpacity={1} fill="url(#novaGradient)" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -215,7 +223,8 @@ export default function LuxuryDashboard() {
       {/* Table Section */}
       <section className="space-y-4">
         <h2 className="text-xl font-black tracking-tight px-2">Active Inventory</h2>
-        <ReusableTable columns={columns} data={products as Product[]} />
+        {/* سيتم عرض المنتجات الحقيقية لو الـ API بيرجعها، وإلا سيظل الجدول ينتظر البيانات */}
+        <ReusableTable columns={columns} data={products} />
       </section>
 
       <footer className="text-center pb-4">
