@@ -6,20 +6,20 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
   const { pathname } = request.nextUrl;
 
-  const authRoutes = ["/login", "/register"];
-
-  const isAuthPage = authRoutes.includes(pathname);
-  const isDashboard = pathname === "/" || pathname.startsWith("/admin") || pathname.startsWith("/products");
+  // Public routes that don't require authentication
+  const publicRoutes = ["/login", "/register"];
+  const isPublicRoute = publicRoutes.includes(pathname);
+  const isAuthApi = pathname.startsWith("/api/auth");
 
   const decoded = token ? verifyToken(token) : null;
 
   // لو المستخدم مسجل دخول ويحاول فتح login او register
-  if (isAuthPage && decoded) {
+  if (isPublicRoute && decoded) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // لو يحاول دخول dashboard بدون تسجيل
-  if (isDashboard && !decoded) {
+  // لو يحاول دخول أي صفحة محمية بدون تسجيل دخول
+  if (!isPublicRoute && !isAuthApi && !decoded) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
@@ -28,10 +28,12 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/",
-    "/admin/:path*",
-    "/products/:path*",
-    "/login",
-    "/register"
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization)
+     * - favicon.ico, images, etc.
+     */
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ]
 };

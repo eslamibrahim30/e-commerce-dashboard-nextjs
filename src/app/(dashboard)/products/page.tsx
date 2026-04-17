@@ -93,9 +93,57 @@ export default function ProductsPage() {
     }
   }, [showForm]);
 
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      errors.name = "Product name is required";
+    }
+
+    if (!formData.description.trim()) {
+      errors.description = "Description is required";
+    }
+
+    if (formData.price === "" || formData.price === undefined) {
+      errors.price = "Price is required";
+    } else if (Number(formData.price) < 0) {
+      errors.price = "Price cannot be negative";
+    }
+
+    if (formData.discount !== "" && formData.discount !== undefined) {
+      const discountVal = Number(formData.discount);
+      if (discountVal < 0) {
+        errors.discount = "Discount cannot be less than 0%";
+      } else if (discountVal > 100) {
+        errors.discount = "Discount cannot be more than 100%";
+      }
+    }
+
+    if (formData.stock !== "" && formData.stock !== undefined) {
+      const stockVal = Number(formData.stock);
+      if (!Number.isInteger(stockVal)) {
+        errors.stock = "Stock must be a whole number";
+      } else if (stockVal < 0) {
+        errors.stock = "Stock cannot be negative";
+      }
+    }
+
+    if (!formData.category) {
+      errors.category = "Category is required";
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async () => {
     try {
       setError("");
+      setFieldErrors({});
+
+      if (!validateForm()) return;
 
       const url = editingProduct
         ? `/api/products/${editingProduct._id}`
@@ -229,6 +277,7 @@ export default function ProductsPage() {
             stock: String(item.stock),
             category: item.category?._id || "",
           });
+          setFieldErrors({});
           setShowForm(true);
         }}
         variant="ghost"
@@ -264,6 +313,7 @@ export default function ProductsPage() {
           onClick={() => {
             setEditingProduct(null);
             setFormData(emptyForm);
+            setFieldErrors({});
             setShowForm(!showForm);
           }}
         >
@@ -278,61 +328,96 @@ export default function ProductsPage() {
           {error && <p className="text-red-500 mb-3">{error}</p>}
 
           <div className="grid grid-cols-2 gap-3">
-            <Input
-              placeholder="Name"
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-            />
-            <Input
-              placeholder="Price"
-              type="number"
-              value={formData.price}
-              onChange={(e) =>
-                setFormData({ ...formData, price: e.target.value })
-              }
-            />
-            <Input
-              placeholder="Discount"
-              type="number"
-              value={formData.discount}
-              onChange={(e) =>
-                setFormData({ ...formData, discount: e.target.value })
-              }
-            />
-            <Input
-              placeholder="Stock"
-              type="number"
-              value={formData.stock}
-              onChange={(e) =>
-                setFormData({ ...formData, stock: e.target.value })
-              }
-            />
+            <div className="flex flex-col gap-1">
+              <Input
+                placeholder="Name"
+                value={formData.name}
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  if (fieldErrors.name) setFieldErrors({ ...fieldErrors, name: "" });
+                }}
+                className={fieldErrors.name ? "border-red-500" : ""}
+              />
+              {fieldErrors.name && <span className="text-red-500 text-xs">{fieldErrors.name}</span>}
+            </div>
+            <div className="flex flex-col gap-1">
+              <Input
+                placeholder="Price"
+                type="number"
+                min="0"
+                step="0.01"
+                value={formData.price}
+                onChange={(e) => {
+                  setFormData({ ...formData, price: e.target.value });
+                  if (fieldErrors.price) setFieldErrors({ ...fieldErrors, price: "" });
+                }}
+                className={fieldErrors.price ? "border-red-500" : ""}
+              />
+              {fieldErrors.price && <span className="text-red-500 text-xs">{fieldErrors.price}</span>}
+            </div>
+            <div className="flex flex-col gap-1">
+              <Input
+                placeholder="Discount (%)"
+                type="number"
+                min="0"
+                max="100"
+                step="1"
+                value={formData.discount}
+                onChange={(e) => {
+                  setFormData({ ...formData, discount: e.target.value });
+                  if (fieldErrors.discount) setFieldErrors({ ...fieldErrors, discount: "" });
+                }}
+                className={fieldErrors.discount ? "border-red-500" : ""}
+              />
+              {fieldErrors.discount && <span className="text-red-500 text-xs">{fieldErrors.discount}</span>}
+            </div>
+            <div className="flex flex-col gap-1">
+              <Input
+                placeholder="Stock"
+                type="number"
+                min="0"
+                step="1"
+                value={formData.stock}
+                onChange={(e) => {
+                  setFormData({ ...formData, stock: e.target.value });
+                  if (fieldErrors.stock) setFieldErrors({ ...fieldErrors, stock: "" });
+                }}
+                className={fieldErrors.stock ? "border-red-500" : ""}
+              />
+              {fieldErrors.stock && <span className="text-red-500 text-xs">{fieldErrors.stock}</span>}
+            </div>
 
-            <Input
-              placeholder="Description"
-              className="col-span-2"
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-            />
+            <div className="col-span-2 flex flex-col gap-1">
+              <Input
+                placeholder="Description"
+                value={formData.description}
+                onChange={(e) => {
+                  setFormData({ ...formData, description: e.target.value });
+                  if (fieldErrors.description) setFieldErrors({ ...fieldErrors, description: "" });
+                }}
+                className={fieldErrors.description ? "border-red-500" : ""}
+              />
+              {fieldErrors.description && <span className="text-red-500 text-xs">{fieldErrors.description}</span>}
+            </div>
 
-            <select
-              className="col-span-2 border p-2 rounded"
-              value={formData.category}
-              onChange={(e) =>
-                setFormData({ ...formData, category: e.target.value })
-              }
-            >
-              <option value="">Select Category</option>
-              {categories.map((cat) => (
-                <option key={cat._id} value={cat._id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
+            <div className="col-span-2 flex flex-col gap-1">
+              <select
+                className={`border p-2 rounded ${fieldErrors.category ? "border-red-500" : ""}`}
+                value={formData.category}
+                onChange={(e) => {
+                  setFormData({ ...formData, category: e.target.value });
+                  if (fieldErrors.category) setFieldErrors({ ...fieldErrors, category: "" });
+                }}
+              >
+                <option value="">Select Category</option>
+                {categories.map((cat) => (
+                  <option key={cat._id} value={cat._id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+              {fieldErrors.category && <span className="text-red-500 text-xs">{fieldErrors.category}</span>}
+            </div>
           </div>
 
           <Button onClick={handleSubmit} className="mt-4">

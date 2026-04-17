@@ -40,28 +40,50 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { name, description, price, discount, stock, category } = body;
 
-    // Validate required fields manually for cleaner error messages
+    // Validate all fields
+    const errors: string[] = [];
+
     if (!name || (typeof name === "string" && name.trim().length === 0)) {
-      return NextResponse.json(
-        {
-          success: false,
-          data: null,
-          message: "Product name is required",
-        },
-        { status: 400 }
-      );
+      errors.push("Product name is required");
     }
 
-    // Validate category exists
-    if (
-      !category ||
-      !mongoose.Types.ObjectId.isValid(category)
-    ) {
+    if (!description || (typeof description === "string" && description.trim().length === 0)) {
+      errors.push("Product description is required");
+    }
+
+    if (price === undefined || price === null || price === "") {
+      errors.push("Product price is required");
+    } else if (Number(price) < 0) {
+      errors.push("Price cannot be negative");
+    }
+
+    if (discount !== undefined && discount !== null && discount !== "") {
+      if (Number(discount) < 0) {
+        errors.push("Discount cannot be less than 0%");
+      } else if (Number(discount) > 100) {
+        errors.push("Discount cannot be more than 100%");
+      }
+    }
+
+    if (stock !== undefined && stock !== null && stock !== "") {
+      if (!Number.isInteger(Number(stock))) {
+        errors.push("Stock must be a whole number");
+      } else if (Number(stock) < 0) {
+        errors.push("Stock cannot be negative");
+      }
+    }
+
+    if (!category || !mongoose.Types.ObjectId.isValid(category)) {
+      errors.push("Valid category is required");
+    }
+
+    if (errors.length > 0) {
       return NextResponse.json(
         {
           success: false,
           data: null,
-          message: "Category not found",
+          message: errors[0],
+          errors,
         },
         { status: 400 }
       );
