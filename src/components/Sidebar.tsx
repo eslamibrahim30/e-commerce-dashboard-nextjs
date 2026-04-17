@@ -1,16 +1,20 @@
-"use client"
+"use client";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, ShoppingBag, FolderTree, LogOut, Settings } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { 
+    LayoutDashboard, ShoppingBag, FolderTree, 
+    LogOut, Menu, X 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
-interface ILogOut{
-    success:boolean;
-    data:null;
-    message:string
-
+interface ILogOut {
+    success: boolean;
+    data: null;
+    message: string;
 }
 
 const menuItems = [
@@ -20,75 +24,97 @@ const menuItems = [
 ];
 
 export default function Sidebar() {
+    const [isOpen, setIsOpen] = useState(false);
     const router = useRouter();
+    const pathname = usePathname();
+
+    useEffect(() => {
+        setIsOpen(false);
+    }, [pathname]);
+
     const handleLogout = async () => {
-  const response = await fetch("/api/auth/logout", {
-    method: "POST",
-  });
+        const response = await fetch("/api/auth/logout", { method: "POST" });
+        const data: ILogOut = await response.json();
 
-    const data:ILogOut = await response.json();
-
-    if (response.ok) {
-        toast.success(data.message,{style: {
-    background: "#16a34a",
-    color: "white",
-    },});
-    } else {
-        toast.error(data.message || "Logout failed", {
-                    style: {
-                        background: '#dc2626',
-                        color: '#fff',
-                    },
-                });
-    }
-    router.push("/login");
+        if (response.ok) {
+            toast.success(data.message, {
+                style: { background: "#16a34a", color: "white" },
+            });
+        } else {
+            toast.error(data.message || "Logout failed", {
+                style: { background: '#dc2626', color: '#fff' },
+            });
+        }
+        router.push("/login");
     };
 
     return (
-        <aside className="w-64 bg-card h-screen flex flex-col fixed left-0 top-0 border-r transition-colors duration-300 z-50">
+        <>
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="lg:hidden fixed top-4 left-4 z-[60] p-2 bg-primary text-white rounded-xl shadow-lg active:scale-95 transition-all"
+            >
+                {isOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
 
-            <div className="p-6 mb-2">
-                <Link href="/" className="flex items-center justify-start group">
-                    <div className="w-32 h-10 flex items-center justify-start p-0.5 transition-all duration-300 group-hover:scale-105 ">
-                        <Image
-                            src="/logo.png" 
-                            alt="Nova Logo"
-                            width={128}
-                            height={40} 
-                            priority 
-                            className="object-contain" 
-                        />
-                    </div>
+            {isOpen && (
+                <div 
+                    className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[55] lg:hidden animate-in fade-in duration-300"
+                    onClick={() => setIsOpen(false)}
+                />
+            )}
 
-                </Link>
-            </div>
+            <aside className={cn(
+                "fixed left-0 top-0 h-screen bg-card border-r z-[58] transition-all duration-300 ease-in-out flex flex-col w-64",
+                isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+            )}>
 
-            {/* القائمة الجانبية (Nav) */}
-            <nav className="flex-1 px-4 space-y-1.5">
-                {menuItems.map((item) => (
-                    <Link
-                        key={item.href}
-                        href={item.href}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all duration-200 group"
-                    >
-                        <item.icon size={20} className="transition-colors group-hover:text-primary" />
-                        <span className="font-medium text-sm">{item.label}</span>
+                <div className="p-8 mb-4">
+                    <Link href="/" className="flex items-center justify-start group">
+                        <div className="w-32 h-10 relative transition-all duration-300 group-hover:scale-105">
+                            <Image
+                                src="/logo.png"
+                                alt="Nova Logo"
+                                fill
+                                priority
+                                className="object-contain"
+                            />
+                        </div>
                     </Link>
-                ))}
-            </nav>
+                </div>
 
-            <div className="p-4 border-t space-y-1 mt-auto">
-                
-                <Button
-                    onClick={handleLogout}
-                    variant="ghost"
-                    // تأثير الخروج باللون الأحمر الـ Destructive
-                    className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors rounded-lg"
-                >
-                    <LogOut size={20} />
-                    <span className="text-sm font-medium">Logout</span>
-                </Button>
-            </div>
-        </aside>
+                <nav className="flex-1 px-4 space-y-2">
+                    {menuItems.map((item) => {
+                        const isActive = pathname === item.href;
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={cn(
+                                    "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group font-semibold text-sm",
+                                    isActive 
+                                        ? "bg-primary text-white shadow-md shadow-primary/20" 
+                                        : "text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                                )}
+                            >
+                                <item.icon size={20} />
+                                <span>{item.label}</span>
+                            </Link>
+                        );
+                    })}
+                </nav>
+
+                <div className="p-4 border-t border-border/50 mt-auto">
+                    <Button
+                        onClick={handleLogout}
+                        variant="ghost"
+                        className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors rounded-xl font-bold h-12"
+                    >
+                        <LogOut size={20} />
+                        <span>Logout</span>
+                    </Button>
+                </div>
+            </aside>
+        </>
     );
 }
