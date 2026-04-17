@@ -2,7 +2,7 @@
 
 A full-stack admin dashboard for managing an e-commerce store, built with **Next.js 16**, **MongoDB**, and **Tailwind CSS**. Features JWT-based authentication, full CRUD for products and categories, real-time analytics charts, and comprehensive input validation.
 
-[![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-Visit_Site-blue?style=for-the-badge)](https://e-commerce-dashboard-nextjs.islam-sweng.workers.dev/)
+[![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-Visit_Site-blue?style=for-the-badge)](https://illustrious-halva-7e51f7.netlify.app/)
 
 ---
 
@@ -30,7 +30,7 @@ A full-stack admin dashboard for managing an e-commerce store, built with **Next
 | UI Library   | [shadcn/ui](https://ui.shadcn.com/)              |
 | Charts       | [Recharts](https://recharts.org/)                |
 | Icons        | [Lucide React](https://lucide.dev/)              |
-| Deployment   | [Cloudflare](https://developers.cloudflare.com/) via OpenNext |
+| Deployment   | [Netlify](https://www.netlify.com/)              |
 
 ---
 
@@ -215,8 +215,6 @@ Validation is enforced at **three layers**:
 | `npm run build`    | Build for production                       |
 | `npm run start`    | Start the production server                |
 | `npm run lint`     | Run ESLint                                 |
-| `npm run preview`  | Preview on Cloudflare runtime locally      |
-| `npm run deploy`   | Build and deploy to Cloudflare             |
 
 ---
 
