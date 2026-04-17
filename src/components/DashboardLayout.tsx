@@ -20,13 +20,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
       user = await User.findById(decoded.userId).select("-password");
     }
   }
+
   return (
     <div className="flex min-h-screen bg-slate-50">
       <Sidebar />
 
-      <div className="flex-1 ml-64 flex flex-col">
+      <div className="flex-1 flex flex-col transition-all duration-300 ml-0 lg:ml-64 min-w-0 overflow-hidden">
         <Navbar user={user} />
-        <main className="p-8">
+        
+        <main className="p-4 md:p-8">
           {children}
         </main>
       </div>

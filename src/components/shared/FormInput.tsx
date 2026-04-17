@@ -21,7 +21,7 @@ const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
         </Label>
 
         <Input
-          ref={ref} // ربط الـ ref هنا مهم جداً
+          ref={ref} 
           id={name}
           name={name}
           className={`bg-background border-input transition-all focus-visible:ring-primary/20 ${
@@ -29,7 +29,7 @@ const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
               ? "border-destructive focus-visible:ring-destructive/20" 
               : "focus-visible:border-primary"
           } ${className}`}
-          {...props} // نمرر الـ register props هنا (value, onChange, onBlur)
+          {...props} 
         />
 
         {error && (

@@ -58,8 +58,8 @@ export default function RegisterPage() {
         <Image 
           src="/logo.png" 
           alt="Nova Logo"
-          width={70} 
-          height={70}
+          width={100} 
+          height={100}
           className="drop-shadow-xl"
           priority
         />
@@ -80,7 +80,7 @@ export default function RegisterPage() {
             
             <FormInput 
               label="Full Name" 
-              placeholder="Nova Elnshar"
+              placeholder="Nova"
               error={errors.name?.message}
               {...register("name")} 
             />

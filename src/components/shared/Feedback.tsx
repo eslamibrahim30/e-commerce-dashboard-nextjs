@@ -2,7 +2,6 @@ import React from "react";
 import { Loader2, AlertCircle, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// --- 1. Loading Spinner Component ---
 export function LoadingSpinner({ message = "Loading data..." }: { message?: string }) {
   return (
     <div className="flex flex-col items-center justify-center p-12 min-h-[200px] w-full animate-in fade-in duration-500">
@@ -17,7 +16,6 @@ export function LoadingSpinner({ message = "Loading data..." }: { message?: stri
   );
 }
 
-// --- 2. Error Message Component ---
 interface ErrorMessageProps {
   title?: string;
   message: string;

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Edit, Trash2, Plus, FolderTree, X, Save } from "lucide-react";
 import { ICategory } from "@/models/Category";
+import { toast } from "sonner";
 
 
 
@@ -21,6 +22,7 @@ export default function CategoriesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [deletingCategory, setDeletingCategory] = useState<ICategory | null>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -78,20 +80,30 @@ export default function CategoriesPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure? This will fail if products are linked to this category.")) return;
+  const handleDelete = async () => {
+    if (!deletingCategory) return;
 
     try {
-      const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/categories/${deletingCategory._id}`, { method: "DELETE" });
       const data = await res.json();
 
       if (data.success) {
-        setCategories((prev) => prev.filter((c) => c._id !== id));
+        setCategories((prev) => prev.filter((c) => c._id !== deletingCategory._id));
+        toast.success("Category deleted successfully", {
+          style: { background: "#16a34a", color: "white" },
+        });
       } else {
-        alert(data.message);
+        toast.error(data.message || "Failed to delete category", {
+          style: { background: "#dc2626", color: "#fff" },
+        });
       }
     } catch (err) {
       console.error("Delete error:", err);
+      toast.error("Something went wrong", {
+        style: { background: "#dc2626", color: "#fff" },
+      });
+    } finally {
+      setDeletingCategory(null);
     }
   };
 
@@ -146,7 +158,7 @@ export default function CategoriesPage() {
       <Button
         variant="ghost"
         size="icon"
-        onClick={() => handleDelete(item._id)}
+        onClick={() => setDeletingCategory(item)}
         className="h-8 w-8 text-muted-foreground hover:text-destructive"
       >
         <Trash2 size={16} />
@@ -209,6 +221,26 @@ export default function CategoriesPage() {
           <ReusableTable<ICategory> columns={columns} data={categories} actions={actions} />
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deletingCategory && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200">
+          <div className="bg-card p-6 rounded-xl shadow-xl max-w-sm w-full mx-4 animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-semibold mb-2">Delete Category</h3>
+            <p className="text-sm text-muted-foreground mb-6">
+              Are you sure you want to delete <span className="font-medium text-foreground">{deletingCategory.name}</span>? This will fail if products are linked to this category.
+            </p>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setDeletingCategory(null)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleDelete}>
+                <Trash2 size={16} /> Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
