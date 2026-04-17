@@ -26,13 +26,65 @@ export async function PUT(request: NextRequest, context: Context) {
     const body = await request.json();
     const { name, description, price, discount, stock, category } = body;
 
-    // Build update object with only provided fields
+    // Validate provided fields
+    const errors: string[] = [];
     const updateData: Record<string, unknown> = {};
-    if (name !== undefined) updateData.name = name;
-    if (description !== undefined) updateData.description = description;
-    if (price !== undefined) updateData.price = price;
-    if (discount !== undefined) updateData.discount = discount;
-    if (stock !== undefined) updateData.stock = stock;
+
+    if (name !== undefined) {
+      if (typeof name === "string" && name.trim().length === 0) {
+        errors.push("Product name cannot be empty");
+      } else {
+        updateData.name = name;
+      }
+    }
+
+    if (description !== undefined) {
+      if (typeof description === "string" && description.trim().length === 0) {
+        errors.push("Product description cannot be empty");
+      } else {
+        updateData.description = description;
+      }
+    }
+
+    if (price !== undefined) {
+      if (Number(price) < 0) {
+        errors.push("Price cannot be negative");
+      } else {
+        updateData.price = price;
+      }
+    }
+
+    if (discount !== undefined) {
+      if (Number(discount) < 0) {
+        errors.push("Discount cannot be less than 0%");
+      } else if (Number(discount) > 100) {
+        errors.push("Discount cannot be more than 100%");
+      } else {
+        updateData.discount = discount;
+      }
+    }
+
+    if (stock !== undefined) {
+      if (!Number.isInteger(Number(stock))) {
+        errors.push("Stock must be a whole number");
+      } else if (Number(stock) < 0) {
+        errors.push("Stock cannot be negative");
+      } else {
+        updateData.stock = stock;
+      }
+    }
+
+    if (errors.length > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          data: null,
+          message: errors[0],
+          errors,
+        },
+        { status: 400 }
+      );
+    }
 
     // Validate category if provided
     if (category !== undefined) {
